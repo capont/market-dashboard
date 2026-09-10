@@ -31,7 +31,7 @@
 | 4 | 本地插值 / demo | 无限 | — |
 
 > 一个 TwelveData key 即可覆盖全部 7 个品种（金银两油 VIX 10Y DXY 都有）。
-> 不要再用新浪 / TradingView 隐藏接口（灰接口、无授权、ToS 风险）。
+>  TradingView 隐藏接口（灰接口、无授权、ToS 风险）。
 
 ## 二、本地开发
 
