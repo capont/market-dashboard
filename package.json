@@ -1,0 +1,20 @@
+{
+  "name": "market-dashboard",
+  "version": "1.0.0",
+  "description": "贵金属·原油行情·资讯聚合监控台 —— 单文件前端 + Vercel Edge/Node 后端，覆盖行情/驱动/技术点位/日历/要闻/强弱榜",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "node verify_contract.js && node verify_frontend.js",
+    "test": "node test_sources.js",
+    "start": "npx serve ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "vercel": {
+    "buildCommand": "",
+    "outputDirectory": ".",
+    "framework": null
+  }
+}

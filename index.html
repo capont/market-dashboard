@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贵金属·原油行情·资讯聚合监控台</title>
+<style>
+:root{
+  --bg:#0a0e17; --panel:#0f141f; --panel2:#121a2b; --border:#1e2a40;
+  --txt:#e6edf5; --sub:#7d8ca3; --gold:#f5a623; --silver:#c0c8d6;
+  --oil:#e07b39; --green:#26a69a; --red:#ef4d4d; --blue:#4a90d9; --purple:#9b6dd6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;font-size:13px;line-height:1.5}
+.app{max-width:1600px;margin:0 auto;padding:14px}
+/* 顶栏 */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:linear-gradient(90deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:10px;margin-bottom:12px;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--oil));display:flex;align-items:center;justify-content:center;font-weight:700;color:#0a0e17}
+.brand h1{font-size:15px;font-weight:700}
+.brand small{color:var(--sub);font-size:11px;display:block;font-weight:400}
+.clocks{display:flex;gap:16px;flex-wrap:wrap}
+.clock{text-align:center;font-size:11px;color:var(--sub)}
+.clock b{display:block;color:var(--txt);font-size:12px;font-variant-numeric:tabular-nums}
+.status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* 网格 */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0}
+.card h2{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.card h2 .tag{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--panel2);color:var(--sub);font-weight:400}
+.span3{grid-column:span 3}.span4{grid-column:span 4}.span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}
+/* 行情卡 */
+.qcard{position:relative;overflow:hidden}
+.qcard .price{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.qcard .chg{font-size:13px;font-weight:600;margin-left:8px}
+.qcard .meta{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--sub);flex-wrap:wrap}
+.qcard .meta span b{color:var(--txt);font-variant-numeric:tabular-nums}
+.spark{position:absolute;right:12px;top:12px;width:96px;height:44px}
+.color-gold{color:var(--gold)}.color-silver{color:var(--silver)}.color-oil{color:var(--oil)}
+.up{color:var(--red)}.down{color:var(--green)}.flat{color:var(--sub)}
+/* 概览表 */
+.ov{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ov div{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px dashed var(--border);font-size:12px}
+.ov div:nth-child(odd){padding-right:10px;border-right:1px dashed var(--border)}
+.ov div:nth-child(even){padding-left:10px}
+.ov .k{color:var(--sub)}
+/* 驱动条 */
+.drv-item{margin-bottom:11px}
+.drv-item:last-child{margin-bottom:0}
+.drv-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.drv-head .nm{color:var(--txt)}
+.drv-head .v{font-weight:700;font-variant-numeric:tabular-nums}
+.drv-bar{height:7px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.drv-fill{height:100%;border-radius:4px;transition:width .6s}
+.bias{font-size:10px;float:right;opacity:.85}
+/* pivot 表 */
+.pvt{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.pvt th{color:var(--sub);font-weight:500;text-align:center;padding:5px 2px;border-bottom:1px solid var(--border)}
+.pvt td{text-align:center;padding:6px 2px;border-bottom:1px solid var(--border)}
+.pvt tr.active td{background:rgba(245,166,35,.08)}
+.pvt .now{color:var(--gold);font-weight:700}
+.pvt .r{color:var(--red)}.pvt .s{color:var(--green)}
+/* 日历 */
+.cal-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:12px;gap:8px}
+.cal-row .nm{flex:1}
+.cal-row .fc{color:var(--sub);font-size:11px;font-variant-numeric:tabular-nums}
+.cal-row .st{padding:2px 8px;border-radius:10px;font-size:10px;white-space:nowrap}
+.st.pending{background:rgba(245,166,35,.15);color:var(--gold)}
+.st.published{background:rgba(38,166,154,.15);color:var(--green)}
+.imp{border-left:3px solid var(--border)}
+.imp.high{border-left-color:var(--red)}.imp.medium{border-left-color:var(--gold)}
+/* 要闻 */
+.news-item{padding:9px 4px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.news-item:hover{background:var(--panel2)}
+.news-item .t{font-size:12px;line-height:1.4;margin-bottom:5px}
+.news-item .info{display:flex;gap:8px;font-size:10px;color:var(--sub);flex-wrap:wrap;align-items:center}
+.badge{padding:1px 7px;border-radius:3px;font-size:10px}
+.b-gold{background:rgba(245,166,35,.15);color:var(--gold)}
+.b-oil{background:rgba(224,123,57,.15);color:var(--oil)}
+.b-macro{background:rgba(74,144,217,.15);color:var(--blue)}
+.b-geo{background:rgba(239,77,77,.15);color:var(--red)}
+.b-market{background:rgba(155,109,214,.15);color:var(--purple)}
+.b-fin{background:rgba(125,140,163,.2);color:var(--sub)}
+.filter{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.filter button{background:var(--panel2);border:1px solid var(--border);color:var(--sub);padding:4px 12px;border-radius:14px;font-size:11px;cursor:pointer}
+.filter button.on{background:var(--gold);color:#0a0e17;border-color:var(--gold);font-weight:600}
+/* 排行榜 */
+.rank-row{display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12px;border-bottom:1px solid var(--border)}
+.rank-row .idx{width:20px;color:var(--sub);text-align:center}
+.rank-row .nm{flex:1}
+.rank-row .bar-wrap{flex:2;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;min-width:60px}
+.rank-row .bar{height:100%;border-radius:3px}
+.rank-row .val{width:70px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.foot{text-align:center;color:var(--sub);font-size:11px;padding:14px 0 4px}
+@media(max-width:1100px){.span3,.span4,.span6,.span8{grid-column:span 12}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">M</div>
+      <div>
+        <h1>贵金属 · 原油行情 · 资讯聚合监控台</h1>
+        <small>实时数据（含延迟）· 金银 / 两油 / VIX / 10Y / DXY · 数据驱动研判</small>
+      </div>
+    </div>
+    <div class="clocks" id="clocks"></div>
+    <div class="status">
+      <span class="dot"></span>
+      <span id="statusTxt">连接中…</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- 行情卡 x3 -->
+    <div class="card qcard span4" data-sym="XAU">
+      <canvas class="spark" data-sym="XAU"></canvas>
+      <h2>现货黄金 <span class="tag">XAU/USD</span></h2>
+      <div><span class="price color-gold" data-f="current">—</span><span class="chg" data-f="changePct"></span></div>
+      <div class="meta">
+        <span>开 <b data-f="open"></b></span><span>高 <b data-f="high"></b></span>
+        <span>低 <b data-f="low"></b></span><span>昨收 <b data-f="prev"></b></span>
+      </div>
+    </div>
+    <div class="card qcard span4" data-sym="XAG">
+      <canvas class="spark" data-sym="XAG"></canvas>
+      <h2>现货白银 <span class="tag">XAG/USD</span></h2>
+      <div><span class="price color-silver" data-f="current">—</span><span class="chg" data-f="changePct"></span></div>
+      <div class="meta">
+        <span>开 <b data-f="open"></b></span><span>高 <b data-f="high"></b></span>
+        <span>低 <b data-f="low"></b></span><span>昨收 <b data-f="prev"></b></span>
+      </div>
+    </div>
+    <div class="card qcard span4" data-sym="BRENT">
+      <canvas class="spark" data-sym="BRENT"></canvas>
+      <h2>布伦特原油 <span class="tag">BRENT/USD</span></h2>
+      <div><span class="price color-oil" data-f="current">—</span><span class="chg" data-f="changePct"></span></div>
+      <div class="meta">
+        <span>开 <b data-f="open"></b></span><span>高 <b data-f="high"></b></span>
+        <span>低 <b data-f="low"></b></span><span>昨收 <b data-f="prev"></b></span>
+      </div>
+    </div>
+
+    <!-- 快速概览 -->
+    <div class="card span6">
+      <h2>快速概览 <span class="tag" id="ovTime"></span></h2>
+      <div class="ov" id="overview"></div>
+    </div>
+
+    <!-- 市场驱动因素 -->
+    <div class="card span6">
+      <h2>市场驱动因素 · 实时研判 <span class="tag" id="drvTime"></span></h2>
+      <div id="drivers"></div>
+    </div>
+
+    <!-- 关键技术点位 -->
+    <div class="card span6">
+      <h2>关键技术点位 <span class="tag">Pivot</span></h2>
+      <table class="pvt" id="pivot"></table>
+      <small style="color:var(--sub);display:block;margin-top:8px">基于 Pivot 点位测算（P = 枢轴，R1-R3 阻力，S1-S3 支撑），"现价"列高亮当前所处区间。</small>
+    </div>
+
+    <!-- 财经日历 -->
+    <div class="card span6">
+      <h2>财经日历 <span class="tag" id="calTime"></span></h2>
+      <div id="calendar"></div>
+    </div>
+
+    <!-- 实时强弱榜 + 波幅 -->
+    <div class="card span6">
+      <h2>实时强弱榜 · 当日涨跌幅 <span class="tag">Movers</span></h2>
+      <div id="rankMovers"></div>
+      <h2 style="margin-top:14px">当日波幅 <span class="tag">High ⇋ Low</span></h2>
+      <div id="rankAmp"></div>
+    </div>
+
+    <!-- 影响行情的要闻 -->
+    <div class="card span6">
+      <h2>影响行情的要闻 <span class="tag" id="newsTime">每 60s 刷新</span></h2>
+      <div class="filter" id="newsFilter">
+        <button class="on" data-f="all">全部</button>
+        <button data-f="黄金">黄金</button>
+        <button data-f="原油">原油</button>
+        <button data-f="宏观">宏观</button>
+        <button data-f="国际局势">地缘</button>
+      </div>
+      <div id="newsList"></div>
+    </div>
+
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const API = '/api/quote';
+let INTERVAL = 60000;
+let timer = null;
+let newsFilter = 'all';
+
+// ---------- 工具 ----------
+const $ = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => [...p.querySelectorAll(s)];
+function fmt(n, d=2){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function cls(v){ return v>0?'up':v<0?'down':'flat'; }
+function chgPct(v){ return (v>=0?'+':'') + fmt(v,2) + '%'; }
+
+// ---------- 三地时间 ----------
+function tickClocks(){
+  const now = new Date();
+  const zones = [
+    {name:'北京', tz:8}, {name:'伦敦', tz:0}, {name:'纽约', tz:-4},
+  ];
+  $('#clocks').innerHTML = zones.map(z=>{
+    const d = new Date(now.getTime() + (z.tz-now.getTimezoneOffset()/60)*3600*1000);
+    const s = d.toISOString().substr(11,8);
+    return `<div class="clock">${z.name}<b>${s}</b></div>`;
+  }).join('');
+}
+setInterval(tickClocks,1000); tickClocks();
+
+// ---------- 迷你分时图 ----------
+function drawSpark(canvas, series, color){
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = 96*2, h = canvas.height = 44*2;
+  ctx.clearRect(0,0,w,h);
+  if(!series||series.length<2) return;
+  const vals = series.slice(-120).map(p=>p[1]);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max-min)||1;
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0, color+'40'); grad.addColorStop(1, color+'02');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  vals.forEach((v,i)=>{
+    const x = i/(vals.length-1)*w;
+    const y = h - (v-min)/range*h*0.85 - h*0.075;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5*2; ctx.beginPath();
+  vals.forEach((v,i)=>{
+    const x = i/(vals.length-1)*w;
+    const y = h - (v-min)/range*h*0.85 - h*0.075;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.stroke();
+}
+
+// ---------- 渲染 ----------
+function render(json){
+  const {data, drivers, overview, calendar, news, rankings, source, ts} = json;
+  const time = new Date(ts).toLocaleTimeString('zh-CN',{hour12:false});
+
+  // 行情卡
+  $$('.qcard').forEach(card=>{
+    const sym = card.dataset.sym;
+    const d = data[sym];
+    if(!d) return;
+    card.querySelector('[data-f="current"]').textContent = fmt(d.current, d.digits);
+    const c = card.querySelector('[data-f="changePct"]');
+    c.textContent = chgPct(d.change); c.className = 'chg '+cls(d.change);
+    ['open','high','low','prev'].forEach(f=>{
+      const el = card.querySelector('[data-f="'+f+'"]');
+      if(el) el.textContent = fmt(d[f], d.digits);
+    });
+    drawSpark(card.querySelector('canvas'), d.series, getCssColor(d.current, d.prev, sym));
+  });
+
+  // 概览
+  const ovMap = {
+    XAU:'现货黄金',XAG:'现货白银',WTI:'WTI原油',BRENT:'布伦特原油',
+    ratio:'金银比',goldOilWTI:'金油比(WTI)',goldOilBRENT:'金油比(Brent)',
+    DXY:'美元指数',TNX:'10Y美债',VIX:'VIX恐慌',
+  };
+  $('#overview').innerHTML = overview.map(o=>{
+    const d = data[o.key];
+    const val = o.value!=null ? o.value : (d? d.current : 0);
+    const digits = (o.key==='TNX'||o.key==='VIX')?2 : (o.key.startsWith('goldOil')||o.key==='ratio')?2 : 2;
+    const chg = d? chgPct(d.change):'';
+    return `<div><span class="k">${ovMap[o.key]||o.label}</span><span class="${o.change>0?'up':o.change<0?'down':''}">${fmt(val,digits)}${o.suffix||''} <small>${chg}</small></span></div>`;
+  }).join('');
+  $('#ovTime').textContent = '更新 '+time;
+
+  // 驱动因素
+  const biasColor = {偏多:'up',偏空:'down',中性:'flat',偏多强:'up',偏空强:'down'};
+  $('#drivers').innerHTML = drivers.items.map(it=>{
+    const c = it.level>70? 'var(--red)' : it.level>45? 'var(--gold)' : 'var(--green)';
+    return `<div class="drv-item">
+      <div class="drv-head"><span class="nm">${it.name} <span class="bias ${biasColor[it.bias]||'flat'}">${it.bias}</span></span><span class="v" style="color:${c}">${it.score}</span></div>
+      <div class="drv-bar"><div class="drv-fill" style="width:${it.score}%;background:${c}"></div></div>
+      <small style="color:var(--sub)">${it.note}</small>
+    </div>`;
+  }).join('');
+  $('#drvTime').textContent = '更新 '+time;
+
+  // 技术点位
+  const syms = ['XAU','XAG','WTI','BRENT'];
+  const pvtHead = `<tr><th></th>${syms.map(s=>`<th style="color:${symColor(s)}">${data[s].name.replace('现货','').replace('布伦特','Brent')}</th>`).join('')}</tr>`;
+  const rows = [
+    ['R3', 'r'],['R2','r'],['R1','r'],['P 中枢',''],['S1','s'],['S2','s'],['S3','s'],
+  ];
+  $('#pivot').innerHTML = pvtHead + rows.map(([name,cls])=>{
+    return `<tr>${syms.map(s=>{
+      const p = data[s].pivot[name.toLowerCase()];
+      const isNow = name==='P 中枢';
+      return `<td class="${isNow?'now':cls}">${fmt(p, data[s].digits)}</td>`;
+    }).join('')}</tr>`;
+  }).join('');
+  // 高亮现价所在行（简化：高亮 P 行 + 比较）
+  $$('#pivot tr').forEach((tr,idx)=>{
+    if(idx===0) return;
+    const tds = tr.querySelectorAll('td');
+    let active=false;
+    syms.forEach((s,i)=>{
+      const pv = data[s].pivot;
+      const cur = data[s].current;
+      // 现价相对中枢
+      if(idx===4){ active = true; } // P 行统一高亮作为参考
+    });
+    if(active) tr.classList.add('active');
+  });
+
+  // 财经日历
+  $('#calendar').innerHTML = calendar.map(e=>{
+    const t = new Date(e.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false});
+    return `<div class="cal-row imp ${e.importance}">
+      <span class="nm">${e.name}</span>
+      <span class="fc">${t} · 预测 ${e.forecast}</span>
+      <span class="st ${e.status}">${e.status==='published'?'已公布':'待公布'}</span>
+    </div>`;
+  }).join('');
+  $('#calTime').textContent = '更新 '+time;
+
+  // 强弱榜 / 波幅
+  const rankHTML = (list, isAmp)=> list.map((r,i)=>{
+    const w = Math.min(100, Math.abs(r.change||r.amplitude)*15+5);
+    const c = (r.change||r.amplitude)>0? 'var(--red)':'var(--green)';
+    return `<div class="rank-row"><span class="idx">${i+1}</span><span class="nm">${r.name}</span>
+      <span class="bar-wrap"><span class="bar" style="width:${w}%;background:${c}"></span></span>
+      <span class="val ${cls(r.change)}">${isAmp? fmt(r.amplitude,2)+'%' : chgPct(r.change)}</span></div>`;
+  }).join('');
+  $('#rankMovers').innerHTML = rankHTML(rankings.movers, false);
+  $('#rankAmp').innerHTML = rankHTML(rankings.amplitude, true);
+
+  // 要闻
+  renderNews(news, time);
+
+  // 状态
+  const st = $('#statusTxt');
+  if(source==='demo'){
+    st.textContent = '演示数据（无外网/无 key）· '+time;
+    st.style.color = 'var(--gold)';
+  } else {
+    st.textContent = '实时（含延迟）· '+time+' · '+(INTERVAL/1000)+'s';
+    st.style.color = 'var(--green)';
+  }
+  $('#foot').innerHTML = `数据源：TwelveData / AlphaVantage / metal.live · 当前模式：<b>${source}</b> · 最后更新 ${time} · 刷新间隔 ${(INTERVAL/1000)|0}s`;
+}
+
+function renderNews(news, time){
+  const list = newsFilter==='all' ? news : news.filter(n=>n.cat===newsFilter || n.tag===newsFilter);
+  const cls = {'黄金':'b-gold','原油':'b-oil','宏观':'b-macro','市场':'b-market','财经':'b-fin','国际局势':'b-geo'};
+  $('#newsList').innerHTML = list.map(n=>`
+    <div class="news-item">
+      <div class="t">${n.title}</div>
+      <div class="info">
+        <span class="badge ${cls[n.cat]||'b-fin'}">${n.cat}</span>
+        <span>${n.source}</span>
+        <span>${n.mins} 分钟前</span>
+        <span style="margin-left:auto">${time}</span>
+      </div>
+    </div>`).join('') || '<div class="foot">该分类暂无资讯</div>';
+  $('#newsTime').textContent = '更新 '+time;
+}
+
+// ---------- 颜色 ----------
+function symColor(s){
+  return {XAU:'var(--gold)',XAG:'var(--silver)',WTI:'var(--oil)',BRENT:'var(--oil)'}[s]||'var(--txt)';
+}
+function getCssColor(cur, prev, sym){
+  const c = symColor(sym);
+  return c.replace('var(','').replace(')','');
+}
+
+// ---------- 自适应刷新 ----------
+function startTimer(){
+  clearInterval(timer);
+  timer = setInterval(fetchAll, INTERVAL);
+}
+async function fetchAll(){
+  try{
+    const r = await fetch(API, {cache:'no-store'});
+    const json = await r.json();
+    render(json);
+    // 自适应：1min 源 => 30s，interpolated => 60s，demo => 5min
+    const newInt = json.source==='1min' ? 30000 : json.source==='interpolated' ? 60000 : 300000;
+    if(newInt !== INTERVAL){ INTERVAL = newInt; startTimer(); }
+  }catch(e){
+    $('#statusTxt').textContent = '请求失败，5min 后重试';
+    $('#statusTxt').style.color = 'var(--red)';
+    INTERVAL = 300000; startTimer();
+  }
+}
+
+// ---------- 事件 ----------
+$$('#newsFilter button').forEach(b=>{
+  b.onclick = ()=>{
+    $$('#newsFilter button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    newsFilter = b.dataset.f;
+    // 重新渲染当前缓存（简单：再抓一次）
+    fetchAll();
+  };
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ clearInterval(timer); }
+  else { fetchAll(); startTimer(); }
+});
+
+// ---------- 启动 ----------
+fetchAll();
+</script>
+</body>
+</html>
